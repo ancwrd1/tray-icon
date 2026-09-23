@@ -35,6 +35,7 @@ impl TrayIcon {
                 .map(|icon| icon.inner.into())
                 .into_iter()
                 .collect(),
+            icon_name: attrs.icon_name.unwrap_or_default(),
             title: attrs.title.unwrap_or_default(),
             tooltip: attrs.tooltip.unwrap_or_default(),
             status: ksni::Status::Active,
@@ -64,6 +65,12 @@ impl TrayIcon {
         let icon = icon.map(|icon| icon.inner.into()).into_iter().collect();
         let _ = self.handle.update(move |tray| tray.icon = icon);
         Ok(())
+    }
+
+    pub fn set_icon_name<S: AsRef<str>>(&mut self, icon_name: S) {
+        let _ = self
+            .handle
+            .update(move |tray| tray.icon_name = icon_name.as_ref().to_owned());
     }
 
     pub fn set_menu(&mut self, menu: Option<Box<dyn ContextMenu>>) {
@@ -140,6 +147,7 @@ fn watch_menu_changes(handle: Handle<StatusNotifierTray>, shutdown: Receiver<()>
 pub(super) struct StatusNotifierTray {
     id: TrayIconId,
     icon: Vec<ksni::Icon>,
+    icon_name: String,
     title: String,
     tooltip: String,
     status: ksni::Status,
@@ -177,6 +185,10 @@ impl ksni::Tray for StatusNotifierTray {
 
     fn status(&self) -> ksni::Status {
         self.status
+    }
+
+    fn icon_name(&self) -> String {
+        self.icon_name.clone()
     }
 
     fn icon_pixmap(&self) -> Vec<ksni::Icon> {

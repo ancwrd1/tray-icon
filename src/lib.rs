@@ -241,6 +241,13 @@ pub struct TrayIconAttributes {
     ///
     /// - **Linux / macOS:** Ignored.
     pub guid: Option<u128>,
+
+    /// Icon name taken from the current desktop icon theme.
+    ///
+    /// ## Platform-specific:
+    ///
+    /// - **Linux only, with ksni feature enabled**
+    pub icon_name: Option<String>,
 }
 
 impl Default for TrayIconAttributes {
@@ -255,6 +262,7 @@ impl Default for TrayIconAttributes {
             menu_on_right_click: true,
             title: None,
             guid: None,
+            icon_name: None,
         }
     }
 }
@@ -342,6 +350,12 @@ impl TrayIconBuilder {
     /// Use the icon as a [template](https://developer.apple.com/documentation/appkit/nsimage/1520017-template?language=objc). **macOS only**.
     pub fn with_icon_as_template(mut self, is_template: bool) -> Self {
         self.attrs.icon_is_template = is_template;
+        self
+    }
+
+    /// Set the icon name to be used from the current desktop icon theme. **Linux only, with ksni feature enabled**.
+    pub fn with_icon_name<S: AsRef<str>>(mut self, icon_name: S) -> Self {
+        self.attrs.icon_name = Some(icon_name.as_ref().to_owned());
         self
     }
 
@@ -595,6 +609,14 @@ impl TrayIcon {
     ))]
     pub unsafe fn app_indicator(&self) -> *const libappindicator::AppIndicator {
         self.tray.borrow().app_indicator() as *const _
+    }
+
+    /// Set the icon name to be used from the current desktop icon theme. **Linux only, with ksni feature enabled**.
+    pub fn set_icon_name<S: AsRef<str>>(&self, icon_name: S) {
+        #[cfg(all(target_os = "linux", feature = "ksni"))]
+        self.tray.borrow_mut().set_icon_name(icon_name);
+        #[cfg(not(all(target_os = "linux", feature = "ksni")))]
+        let _ = icon_name;
     }
 }
 
